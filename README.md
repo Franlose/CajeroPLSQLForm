@@ -7,7 +7,7 @@ Aplicación modular de cajero automático desarrollada sobre la base de datos Or
 ## 🏛️ Arquitectura del Sistema
 
 El proyecto sigue una arquitectura clásica de tres niveles para garantizar la seguridad de las transacciones y la reutilización de componentes visuales:
-
+```text
 [ BASE DE DATOS (Esquema: HR) ]
 └── Tablas ── Paquete PL/SQL (PKG_CAJERO) ── Triggers de BD
 ▲
@@ -18,6 +18,7 @@ El proyecto sigue una arquitectura clásica de tres niveles para garantizar la s
 └── WINDOW_PRINCIPAL (Canvases de Operaciones)
 ├── Canvas Cliente: Consultas, Retiradas (LOV), Ingresos.
 └── Canvas Admin: Llenado de Billetes, Exportación Local.
+```
 
 ---
 
