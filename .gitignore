@@ -1,0 +1,31 @@
+# ====================================================================
+# ARCHIVOS EJECUTABLES (COMPILADOS) DE ORACLE FORMS
+# No se suben porque se pueden regenerar compilando los fuentes (.fmb)
+# ====================================================================
+*.fmx
+*.mmx
+*.plx
+
+# ====================================================================
+# ARCHIVOS TEMPORALES Y DE RESPALDO DE ORACLE
+# Archivos de error o copias de seguridad automáticas del Forms Builder
+# ====================================================================
+*.err
+*.bak
+*_backup.*
+
+# ====================================================================
+# ARCHIVOS DE CONFIGURACIÓN LOCAL O DEL ENTORNO
+# Evita subir rutas o contraseñas específicas de tu máquina virtual
+# ====================================================================
+*.env
+*.log
+config/privado/
+
+# ====================================================================
+# SISTEMA OPERATIVO AND BASURA DE TRANSFERENCIA
+# Archivos ocultos que genera Windows o carpetas temporales de la USB
+# ====================================================================
+Thumbs.db
+Desktop.ini
+.DS_Store
