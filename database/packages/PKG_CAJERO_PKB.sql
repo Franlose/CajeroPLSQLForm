@@ -84,7 +84,36 @@ CREATE OR REPLACE PACKAGE BODY hr.pkg_cajero IS
         v_valor_billete NUMBER;
         v_total_ingreso NUMBER;
     BEGIN
-        NULL; -- Código pendiente del punto 1.6
+        -- Validamos que no se intenten ingresar cantidades absurdas o negativas
+        IF p_cantidad <= 0 THEN
+            RAISE_APPLICATION_ERROR(-20003, 'La cantidad de billetes debe ser mayor a cero.');
+        END IF;
+
+        -- Obtenemos el valor nominal del billete a ingresar
+        SELECT id_billete INTO v_valor_billete FROM hr.tipos_billetes WHERE id_billete = p_id_billete;
+
+        -- Calculamos el importe total económico (Billetes * Valor)
+        v_total_ingreso := p_cantidad * v_valor_billete;
+
+        -- Sumamos los billetes físicos al inventario del cajero
+        UPDATE hr.cajero_stock SET cantidad = cantidad + p_cantidad WHERE id_billete = p_id_billete;
+
+        -- Incrementamos el saldo en la cuenta del usuario
+        UPDATE hr.usuarios_cuentas SET saldo = saldo + v_total_ingreso WHERE id_usuario = p_id_usuario;
+
+        -- Registramos la auditoría del ingreso en la tabla MOVIMIENTOS
+        INSERT INTO hr.movimientos (
+            id_mov, id_usuario, fecha, tipo_operacion, 
+            id_billete, cantidad_billetes, total_importe
+        ) VALUES (
+            hr.seq_movimientos.NEXTVAL, p_id_usuario, SYSDATE, 'I', 
+            p_id_billete, p_cantidad, v_total_ingreso
+        );
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE_APPLICATION_ERROR(-20002, 'Error crítico al procesar el ingreso.');
     END ingresar_dinero;
 
 END pkg_cajero;
