@@ -11,7 +11,15 @@ CREATE OR REPLACE PACKAGE BODY hr.pkg_cajero IS
         p_valido     OUT BOOLEAN
     ) IS
     BEGIN
-        NULL; -- Código pendiente
+        -- Buscamos el usuario por su ID y PIN exactos
+        SELECT es_admin INTO p_es_admin FROM hr.usuarios_cuentas
+         WHERE id_usuario = p_id_usuario AND pin = p_pin;
+           
+        p_valido := TRUE;
+    EXCEPTION
+        -- Si las credenciales no coinciden, evitamos que la app se rompa
+        WHEN NO_DATA_FOUND THEN p_valido := FALSE;
+            p_es_admin := 'N';
     END autenticar_usuario;
 
     --------------------------------------------------------------------
