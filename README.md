@@ -1,23 +1,21 @@
 # 🏧 Sistema de Cajero Automático (Oracle Forms & PL/SQL)
 
-Aplicación modular de cajero automático desarrollada sobre la base de datos Oracle (esquema `HR`), utilizando **Oracle Forms Developer** para la capa de presentación y **PL/SQL** para la lógica de negocio distribuida.
+Aplicación modular de cajero automático desarrollada sobre la base de datos Oracle (esquema `HR`), utilizando **Oracle Forms Developer** para la capa de presentación estructurada en módulos independientes y **PL/SQL** para la lógica de negocio centralizada.
 
 ---
 
-## 🏛️ Arquitectura del Sistema
+## 🏛️ Arquitectura Modular del Sistema
 
-El proyecto sigue una arquitectura clásica de tres niveles para garantizar la seguridad de las transacciones y la reutilización de componentes visuales:
+El proyecto ha evolucionado de un diseño monolítico a un ecosistema de componentes desacoplados para garantizar la reutilización de objetos visuales y la seguridad en la navegación:
 ```text
-[ BASE DE DATOS (Esquema: HR) ]
-└── Tablas ── Paquete PL/SQL (PKG_CAJERO) ── Triggers de BD
-▲
-│ SQL / PL/SQL nativo
-▼
-[ CAPA DE PRESENTACIÓN (Oracle Forms - 2 Ventanas Obligatorias) ]
-├── WINDOW_LOGIN (Canvas de Acceso)
-└── WINDOW_PRINCIPAL (Canvases de Operaciones)
-├── Canvas Cliente: Consultas, Retiradas (LOV), Ingresos.
-└── Canvas Admin: Llenado de Billetes, Exportación Local.
+[ LIBRERÍA DE OBJETOS COMPARTIDOS (TEMPLATE_ATM.olb) ] ── Conectada a las pantallas
+├── Alertas Estándar (Confirmación, Errores, Bloqueos)
+└── Clases de Propiedad (Estilos unificados para Fechas, Importes y PINs)
+│
+▼ Herencia visual directa (Subclassing)[ FORMULARIO 1: LOGIN_ATM.fmb ] ───────────► [ FORMULARIO 2: CAJERO_AUTOMATICO.fmb ]
+- Triggers ON-LOGON / ON-ERROR - Interfaz principal de operaciones.
+- Control de 3 intentos de PIN. - Carga dinámica de Canvases según rol.
+- Abre el cajero mediante CALL_FORM - Relación Maestro-Detalle de movimientos.transfiriendo parámetros de usuario. - Control de cierre de sesión (Logout).
 ```
 
 ---
@@ -25,21 +23,27 @@ El proyecto sigue una arquitectura clásica de tres niveles para garantizar la s
 ## 📂 Estructura del Repositorio
 
 ```text
-├── database/               # Objetos de Base de Datos (PL/SQL)
-│   ├── Tablas
-│   │	├── #De moneto solo el sql de prueba.
-│   │	├── DDL_tablas.sql      # Creación de tablas, llaves y restricciones
-│   │   └── DDL_secuencias.sql  # Secuencias para IDs automáticos
-│   └── Packages
-│       └── PKG_CAJERO.sql      # Especificación y cuerpo del paquete lógico
+├── database/               # Componentes de Base de Datos (PL/SQL)
+│   ├── init/               # Scripts de inicialización del entorno
+│   │   ├── 01_DDL_tablas.sql             # Estructura, llaves y restricciones
+│   │   ├── 02_DML_inserts.sql            # Usuarios, billetes y stock de prueba
+│   │   └── 03_queries_verificacion.sql   # Consulta de auditoría interna
+│   │
+│   ├── packages/           # API transaccional
+│   │   ├── PKG_CAJERO_PKS.sql            # Especificación del paquete (Menu)
+│   │   └── PKG_CAJERO_PKB.sql            # Cuerpo del paquete (Cocina interna)
+│   │
+│   └── pruebas/            # Scripts de aseguramiento de calidad
+│       ├── Prueba_T1_4.sql               # Test de la lógica de Autenticación
+│       ├── Prueba_T1_5.sql               # Test del proceso de Retiradas
+│       └── Prueba_T1_6.sql               # Test del proceso de Ingresos
 │
-├── src/
-│   └── forms/                  		 # Componentes de Oracle Forms Developer
-│       ├── CAJERO_AUTOMATICO.fmb        # Archivo fuente del formulario principal
-│       └── CAJERO_AUTOMATICO.fmx        # Binario compilado listo para ejecución
+├── forms/                  # Componentes de Oracle Forms Developer
+│   ├── TEMPLATE.olb    # Librería de Objetos (Alertas y Clases de Propiedad fijos)
+│   ├── LOGIN.fmb       # Código fuente de la pantalla de acceso y seguridad
+│   └── CAJERO_AUTOMATICO.fmb # Código fuente de la pantalla de operaciones bancarias
 │
-├── README.md               # Documentación general del proyecto
-└── .gitignore              # Filtra ejecutables (*.plx)
+└── README.md               # Documentación general del proyecto
 ```
 
 ---
@@ -54,28 +58,28 @@ El sistema se compone de 4 tablas principales interconectadas:
 
 ---
 
-## 🛠️ Especificaciones de Implementación
+## 🔐 Componentes Destacados de la Implementación
 
-### 1. Capa de Base de Datos (PL/SQL)
-*   **`PKG_CAJERO`**: Concentra la lógica transaccional. Evita que el formulario realice operaciones directas en las tablas, mejorando la seguridad.
-*   **Control de Stock**: El procedimiento de retirada calcula mediante un algoritmo la cantidad óptima de billetes a entregar y verifica la existencia en `CAJERO_STOCK` antes de descontar el saldo.
+### 1. Sistema de Plantillas y Reutilización (`.olb`)
+Para evitar duplicar configuraciones estéticas, se ha creado la librería `TEMPLATE_ATM.olb`. Los formularios heredan por *Subclassing* las **Clases de Propiedad** (garantizando máscaras uniformes para monedas `999G990D92€` y fechas `DD/MM/YYYY`) y las **Alertas**, centralizando el diseño visual.
 
-### 2. Capa de Presentación (Oracle Forms)
-*   **Estructura de Ventanas**: Dividido estrictamente en **dos ventanas**. La ventana principal intercambia sus canvases de forma dinámica según los privilegios del usuario autenticado.
-*   **Objetos Reutilizables**:
-    *   **Clases de Propiedad**: Aplicadas a campos de tipo *Fecha*, *Importe* y *Códigos* para estandarizar formatos y validaciones.
-    *   **Alertas**: Mensajes emergentes genéricos parametrizados para confirmaciones críticas (ej. salir del sistema, confirmar retiro).
-    *   **LOV (List of Values)**: Lista dinámica basada en `TIPOS_BILLETES` para la selección del tipo de billete en el canvas de ingreso/retirada.
-*   **Triggers Obligatorios**: Implementación nativa a nivel de formulario para `ON-ERROR` (captura centralizada de excepciones de BD) y `ON-LOGON` (conexión segura al esquema).
-*   **Componentes Interactivos**: Inclusión de un **Menú Contextual** (Popup Menu) asociado a los bloques de datos principales para agilizar la navegación del usuario.
+### 2. Control de Seguridad en el Acceso (`LOGIN_ATM`)
+El formulario de entrada gestiona de forma aislada la seguridad mediante un contador estricto de intentos de PIN. Invoca al procedimiento remoto `autenticar_usuario`. Si el cliente introduce una clave inválida en 3 ocasiones consecutivas, el sistema lanza una alerta de bloqueo y fuerza un cierre total (`EXIT_FORM`).
 
-### 3. Módulos de Reportes (Perfil Administrador)
-*   **Exportación de Caja**: Rutina integrada que genera un archivo plano de texto local (`.txt`) con el desglose actual del inventario de billetes y el balance general del cajero.
+### 3. Transferencia Dinámica de Sesión
+Tras un acceso exitoso, el módulo de login empaqueta el identificador del usuario y su rol (`ES_ADMIN`) en una lista de parámetros nativa, invocando a `CAJERO_AUTOMATICO.fmx` mediante `CALL_FORM`. Al cargar, el nuevo formulario lee estos datos para ocultar o mostrar las pestañas de administración de stock de forma automática.
+
+### 4. Interfaz Basada en LOV y Relaciones Maestro-Detalle
+*   **Selección por LOV:** El cliente no escribe importes libres para la retirada. Utiliza una Lista de Valores desplegable (LOV) que lee el stock de billetes reales.
+*   **Sincronización Nativa:** El bloque de la cuenta actúa como maestro de un bloque multi-registro conectado a `MOVIMIENTOS`, pintando el historial de operaciones automáticamente gracias al trigger integrado de Oracle Forms.
+
+### 5. Reportes mediante `TEXT_IO`
+El perfil administrador dispone de un botón exclusivo para auditar la caja física. El formulario ejecuta un bucle que escribe línea a línea el inventario actual de billetes, exportándolo a un archivo plano `.txt` de almacenamiento local.
 
 ---
 
 ## 🚀 Instrucciones de Despliegue
 
-1.  **Ejecutar Scripts de BD**: Vuele el contenido de la carpeta `/database` en su herramienta SQL (SQL Developer, PL/SQL Developer) conectado al usuario `hr`.
-2.  **Compilar Formulario**: Abra `CAJERO_AUTOMATICO.fmb` en Oracle Forms Builder y genere el archivo ejecutable (`Ctrl + T`) para crear el `.fmx`.
-3.  **Configurar Runtime**: Asegúrese de que la ruta de la carpeta `/forms` se encuentre en la variable de entorno `FORMS_PATH` de su servidor de aplicaciones o registro local.
+1.  **Preparar BD**: Ejecuta secuencialmente los scripts de la carpeta `/database/init/` y compila las cabeceras/cuerpos de la carpeta `/database/packages/`.
+2.  **Enlazar Librería**: Al abrir los fuentes `.fmb` en tu entorno local, asegúrate de abrir también `TEMPLATE_ATM.olb` en el explorador de objetos para que las referencias por herencia carguen correctamente.
+3.  **Compilar Ejecutables**: Genera los archivos binarios (`Ctrl + T`) en Forms Builder asegurando que los archivos resultantes `.fmx` coexistan en el mismo directorio de ejecución para permitir la llamada entre pantallas.
