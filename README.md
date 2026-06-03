@@ -10,7 +10,8 @@ El proyecto ha evolucionado de un diseño monolítico a un ecosistema de compone
 ```text
 [ LIBRERÍA DE OBJETOS COMPARTIDOS (TEMPLATE_ATM.olb) ] ── Conectada a las pantallas
 ├── Alertas Estándar (Confirmación, Errores, Bloqueos)
-└── Clases de Propiedad (Estilos unificados para Fechas, Importes y PINs)
+├── Clases de Propiedad (Estilos unificados para Fechas, Importes y PINs)
+└── Menú Contextual (Popup Menu genérico para interacciones rápidas con clic derecho)
 │
 ▼ Herencia visual directa (Subclassing)[ FORMULARIO 1: LOGIN_ATM.fmb ] ───────────► [ FORMULARIO 2: CAJERO_AUTOMATICO.fmb ]
 - Triggers ON-LOGON / ON-ERROR - Interfaz principal de operaciones.
@@ -75,6 +76,9 @@ Tras un acceso exitoso, el módulo de login empaqueta el identificador del usuar
 
 ### 5. Reportes mediante `TEXT_IO`
 El perfil administrador dispone de un botón exclusivo para auditar la caja física. El formulario ejecuta un bucle que escribe línea a línea el inventario actual de billetes, exportándolo a un archivo plano `.txt` de almacenamiento local.
+
+### 6. Menú Contextual Global (Popup Menu)
+Para cumplir con las directrices de diseño interactivo y usabilidad avanzada en Oracle Forms, se ha integrado un Menú Contextual nativo dentro de la librería compartida. Este componente permite al usuario realizar un clic derecho sobre cualquier campo de texto editable del cajero automático (como el campo de ingreso o retirada de efectivo) para desplegar opciones rápidas de control de la interfaz (ej: "Limpiar Campo" o "Ver Ayuda"), reduciendo la dependencia estricta de botones físicos en la pantalla.
 
 ---
 
